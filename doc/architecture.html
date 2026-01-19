@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Architecture Overview - App Framework Spec</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <h1>App Framework Spec</h1>
+      <nav>
+        <ul>
+          <li class="section-header">Overview</li>
+          <li><a href="index.html"><span class="status-dot ready"></span>Introduction</a></li>
+          <li><a href="architecture.html" class="active"><span class="status-dot ready"></span>Architecture Overview</a></li>
+          <li><a href="roadmap.html"><span class="status-dot unreviewed"></span>Implementation Roadmap</a></li>
+          
+          <li class="section-header">Model</li>
+          <li><a href="projection-schema.html"><span class="status-dot ready"></span>Projection Schema</a></li>
+          <li><a href="client-classes.html"><span class="status-dot unreviewed"></span>Client Class Generation</a></li>
+          
+          <li class="section-header">Core Framework</li>
+          <li><a href="event-system.html"><span class="status-dot unreviewed"></span>Event System</a></li>
+          <li><a href="client-model.html"><span class="status-dot unreviewed"></span>Client Model</a></li>
+          <li><a href="binding.html"><span class="status-dot unreviewed"></span>Data Binding</a></li>
+          <li><a href="view-layer.html"><span class="status-dot unreviewed"></span>View Layer</a></li>
+          
+          <li class="section-header">Server Integration</li>
+          <li><a href="server-sync.html"><span class="status-dot unreviewed"></span>Server Sync Layer</a></li>
+          <li><a href="matlab-controller.html"><span class="status-dot unreviewed"></span>MATLAB Controller</a></li>
+          <li><a href="service-layer.html"><span class="status-dot unreviewed"></span>Service Layer</a></li>
+          
+          <li class="section-header">Design Decisions</li>
+          <li><a href="open-issues.html"><span class="status-dot unreviewed"></span>Open Issues</a></li>
+          <li><a href="coding-guidelines.html"><span class="status-dot unreviewed"></span>Coding Guidelines</a></li>
+        </ul>
+      </nav>
+    </aside>
+    
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Architecture Overview</h1>
+        <nav class="page-nav">
+          <a href="#core-principles" class="page-nav-item">Core Principles</a>
+          <a href="#key-classes" class="page-nav-item">Key Classes</a>
+          <a href="#project-structure" class="page-nav-item">Project Structure</a>
+        </nav>
+      </div>
+      
+      <h2 id="core-principles">Core Principles</h2>
+      
+      <h3>1. MmVC Architecture</h3>
+      <p>The framework implements <strong>MmVC</strong> (Server Model - Client model - View - Controller) with strict separation of concerns and <strong>unidirectional data flow</strong>:</p>
+      <ul>
+        <li><strong>Model ↔ model sync</strong> — Server Model and Client Model are synchronized via the Service Layer using projection schemas</li>
+        <li><strong>View depends only on Client Model</strong> — Views bind to the client model, never directly to server data</li>
+        <li><strong>All server communication via Service Layer</strong> — No component bypasses the Service Layer to talk to MATLAB</li>
+      </ul>
+      
+      <h3>2. Single Source of Truth</h3>
+      <p>The <strong>Server Model</strong> (MATLAB) is the canonical data source. The Client Model is a <strong>synchronized cache</strong> of a subset of the server model, enabling responsive UI without server round-trips for every read operation.</p>
+      <p>Synchronization between MATLAB objects and their JavaScript representations is <strong>configuration-driven</strong>—defined in projection schemas rather than hardcoded in application logic.</p>
+      
+      <h3>3. Event-Driven Communication</h3>
+      <p>All components communicate through a centralized <code>EventManager</code>. This enables:</p>
+      <ul>
+        <li>Loose coupling between components</li>
+        <li>Predictable data flow</li>
+        <li>Easy testing and debugging</li>
+        <li>Type-safe events with schema validation</li>
+      </ul>
+      
+      <h2 id="key-classes">Key Classes</h2>
+      
+      <h3>Server Framework (MATLAB)</h3>
+      <div class="diagram-svg">
+        <img src="images/architecture-diagram.svg" alt="Server-side class diagram" style="max-width: 400px; height: auto;">
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Class</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>AbstractController</strong></td>
+            <td>Routes events from client, dispatches method calls, sends model updates. Each app extends this.</td>
+          </tr>
+          <tr>
+            <td><strong>Model Object</strong></td>
+            <td>Any MATLAB handle object. Canonical data storage, business logic, validation.</td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <h3>Client Framework (JavaScript)</h3>
+      <div class="diagram-svg">
+        <img src="images/client-architecture.svg" alt="Client-side class diagram" style="max-width: 520px; height: auto;">
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Class</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>AbstractApp</strong></td>
+            <td>Core lifecycle coordinator. Owns and wires together all other components. Each app extends this.</td>
+          </tr>
+          <tr>
+            <td><strong>AbstractClientModel</strong></td>
+            <td>Client-side data layer. Caches server model data, syncs via projection schemas, dispatches change events.</td>
+          </tr>
+          <tr>
+            <td><strong>AbstractView</strong></td>
+            <td>Base view with layout integration. Provides lifecycle hooks and access to the binding system.</td>
+          </tr>
+          <tr>
+            <td><strong>EventManager</strong></td>
+            <td>Central event hub. Handles events between view elements, view-to-server calls, bidirectional binding between view and client model, and server notifications.</td>
+          </tr>
+          <tr>
+            <td><strong>BindingManager</strong></td>
+            <td>Connects views to model properties. Handles bidirectional propagation of changes.</td>
+          </tr>
+          <tr>
+            <td><strong>ServiceLayer</strong></td>
+            <td>Abstracts server communication. <code>UIHTMLServiceLayer</code> is the concrete implementation for MATLAB's uihtml.</td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <h2 id="project-structure">Project Structure</h2>
+      
+      <h3>Framework Package</h3>
+      <pre><code>appFramework/
+├── doc/                        # Finalized specification documents
+├── js/                         # Client-side JavaScript framework
+│   └── src/
+│   │   └── AbstractApp.js
+│   │   └── model/
+│   │   └── view/
+│   │   └── projection/
+│   │   └── event-manager/
+│   │   └── service-layer/
+│   │   └── utils/
+│   └── test/                   # JavaScript unit tests for framework
+└── matlab/                     # Server-side MATLAB framework
+    ├── src/
+    │   └── appFramework/
+    │       ├── AbstractController.m
+    │       └── +projection/
+    └── test/                   # MATLAB unit tests for framework
+</code></pre>
+      
+      <h3>App Package</h3>
+      <pre><code>myApp/
+├── index.html                  # uihtml entry point (served root)
+├── appFramework/               # Git submodule (single submodule for both js & matlab, see above)
+│   ├── js/
+│   └── matlab/
+├── js/
+│   └── src/
+│   └── test/
+├── matlab/
+│   └── src/
+│       └── myApp.mlapp             # MATLAB App Designer entry point
+│       ├── +myApp/
+│       │   ├── MyAppController.m   # Extends AbstractController
+│   └── test/
+└── shared/
+    └── model-projection/       # MATLAB ↔ JS projection map JSON files
+</code></pre>
+
+    <div class="callout callout-warning">
+      <h4>Issue to Review:</h4>
+      <p> Single submodule vs separate submodules for JS and MATLAB framework code.</p>
+      <p> Current decision: Single submodule at app root ensures version sync between client and server.</p>        
+      <p>Alternative: Separate submodules under js/ and matlab/ folders to keep all js code (including index.html) under js/.</p>
+      </div>
+      
+      <h3>Framework Integration via Git Submodules</h3>
+      <p>The framework is included in each app as a <strong>Git submodule</strong>. This allows:</p>
+      <ul>
+        <li>Both repos remain independent — framework and app have separate Git histories</li>
+        <li>Version pinning — each app locks to a specific framework commit</li>
+        <li>Editable in place — changes to the framework can be made from within the app directory</li>
+      </ul>
+      
+      <h4>Setup</h4>
+      <pre><code># Add framework as submodule (one-time setup)
+cd myApp
+git submodule add &lt;framework-repo-url&gt; appFramework
+
+# Clone app with submodule
+git clone --recurse-submodules &lt;app-repo-url&gt;
+
+# Or initialize after clone
+git submodule update --init
+
+# Add framework MATLAB code to path
+addpath(fullfile(pwd, 'appFramework', 'matlab'));
+</code></pre>
+      
+      <h4>Development Workflow</h4>
+      <pre><code># Edit framework code
+cd appFramework
+# ... make changes ...
+git add . && git commit -m "Fix bug in EventManager"
+git push origin main   # Pushes to framework repo
+
+# Update app's submodule reference
+cd ..
+git add appFramework
+git commit -m "Update framework to latest"
+git push   # Pushes to app repo
+</code></pre>
+      
+      <h4>Multi-App Development</h4>
+      <p>Each app has its own submodule pointer, allowing different apps to use different framework versions:</p>
+      <pre><code>app1/appFramework/  → framework @ v1.2.0
+app2/appFramework/  → framework @ v1.3.0
+</code></pre>
+    </main>
+  </div>
+</body>
+</html>

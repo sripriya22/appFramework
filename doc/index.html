@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App Framework Specification</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <h1>App Framework Spec</h1>
+      <nav>
+        <ul>
+          <li class="section-header">Overview</li>
+          <li><a href="index.html" class="active"><span class="status-dot ready"></span>Introduction</a></li>
+          <li><a href="architecture.html"><span class="status-dot ready"></span>Architecture Overview</a></li>
+          <li><a href="roadmap.html"><span class="status-dot unreviewed"></span>Implementation Roadmap</a></li>
+          
+          <li class="section-header">Model</li>
+          <li><a href="projection-schema.html"><span class="status-dot ready"></span>Projection Schema</a></li>
+          <li><a href="client-classes.html"><span class="status-dot unreviewed"></span>Client Class Generation</a></li>
+          
+          <li class="section-header">Core Framework</li>
+          <li><a href="event-system.html"><span class="status-dot unreviewed"></span>Event System</a></li>
+          <li><a href="client-model.html"><span class="status-dot unreviewed"></span>Client Model</a></li>
+          <li><a href="binding.html"><span class="status-dot unreviewed"></span>Data Binding</a></li>
+          <li><a href="view-layer.html"><span class="status-dot unreviewed"></span>View Layer</a></li>
+          
+          <li class="section-header">Server Integration</li>
+          <li><a href="server-sync.html"><span class="status-dot unreviewed"></span>Server Sync Layer</a></li>
+          <li><a href="matlab-controller.html"><span class="status-dot unreviewed"></span>MATLAB Controller</a></li>
+          <li><a href="service-layer.html"><span class="status-dot unreviewed"></span>Service Layer</a></li>
+          
+          <li class="section-header">Design Decisions</li>
+          <li><a href="open-issues.html"><span class="status-dot unreviewed"></span>Open Issues</a></li>
+          <li><a href="coding-guidelines.html"><span class="status-dot unreviewed"></span>Coding Guidelines</a></li>
+        </ul>
+      </nav>
+    </aside>
+    
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Introduction</h1>
+        <nav class="page-nav">
+          <a href="#purpose" class="page-nav-item">Purpose</a>
+          <a href="#target-app" class="page-nav-item">Target Application</a>
+        </nav>
+      </div>
+
+      <p><strong>Version:</strong> 1.0 &nbsp;|&nbsp; <strong>Date:</strong> January 2026</p>
+      
+      <h2 id="purpose">Purpose</h2>
+      <p>This document specifies the architecture and design for a modular, event-driven JavaScript framework for building applications on top of MATLAB. The framework enables:</p>
+      <ul>
+        <li><strong>Model (server)-model(client)-View-Controller (MmVC) architecture</strong></li>
+        <li><strong>Server-client synchronization</strong> between MATLAB objects and JavaScript representations</li>
+        <li><strong>Consistent event-driven communication</strong> between client&lt;-&gt;server and between view&lt;-&gt;client model</li>
+        <li><strong>Recursive container-based, config-driven view architecture</strong> with independent layout for each container and bindings to the model</li>
+        <li><strong>Framework-based architecture</strong> where apps depend on server and client framework as an external library</li>
+      </ul>
+      
+      <h2 id="target-app">Target Application: gPKPDSim Configuration Tool</h2>
+      <p>The primary use case driving this design is the <strong>gPKPDSim Configuration Tool</strong>.
+      This has been implemented already with a prototype framework, but needs to be reimplemented cleanly using the new framework.</p>
+    </main>
+  </div>
+</body>
+</html>

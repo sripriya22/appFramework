@@ -1,0 +1,323 @@
+/* App Framework Specification - Styles */
+
+:root {
+  --primary-color: #2563eb;
+  --primary-dark: #1d4ed8;
+  --secondary-color: #64748b;
+  --bg-color: #f8fafc;
+  --sidebar-bg: #1e293b;
+  --sidebar-text: #e2e8f0;
+  --sidebar-active: #3b82f6;
+  --content-bg: #ffffff;
+  --border-color: #e2e8f0;
+  --code-bg: #f1f5f9;
+  --warning-bg: #fef3c7;
+  --warning-border: #f59e0b;
+  --issue-bg: #fee2e2;
+  --issue-border: #ef4444;
+  --decided-bg: #dcfce7;
+  --decided-border: #22c55e;
+  --example-bg: #dbeafe;
+  --example-border: #2563eb;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  line-height: 1.6;
+  color: #334155;
+  background: var(--bg-color);
+}
+
+/* Layout */
+.container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 280px;
+  background: var(--sidebar-bg);
+  color: var(--sidebar-text);
+  padding: 1.5rem 0;
+  position: fixed;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar h1 {
+  font-size: 1.25rem;
+  padding: 0 1.5rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  margin-bottom: 1rem;
+}
+
+.sidebar nav ul {
+  list-style: none;
+}
+
+.sidebar nav ul li a {
+  display: block;
+  padding: 0.5rem 1.5rem;
+  color: var(--sidebar-text);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.sidebar nav ul li a:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.sidebar nav ul li a.active {
+  background: var(--sidebar-active);
+  color: white;
+}
+
+.sidebar nav ul li.section-header {
+  padding: 1rem 1.5rem 0.5rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+/* Main Content */
+.main-content {
+  margin-left: 280px;
+  flex: 1;
+  padding: 2rem 3rem;
+  max-width: 1100px;
+}
+
+.main-content > h1:first-of-type {
+  display: none; /* Hidden when using page-header */
+}
+
+.main-content h1 {
+  font-size: 2rem;
+  color: #0f172a;
+  margin-bottom: 0.5rem;
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 0.5rem;
+}
+
+.main-content h2 {
+  font-size: 1.5rem;
+  color: #1e293b;
+  margin: 2rem 0 1rem;
+  scroll-margin-top: 6rem;  /* Offset for sticky header */
+}
+
+.main-content h3 {
+  font-size: 1.25rem;
+  color: #334155;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.main-content p {
+  margin-bottom: 1rem;
+}
+
+.main-content ul, .main-content ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.main-content li {
+  margin-bottom: 0.5rem;
+}
+
+/* Code blocks */
+code {
+  background: var(--code-bg);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+pre {
+  background: var(--code-bg);
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
+}
+
+pre code {
+  background: none;
+  padding: 0;
+}
+
+/* Callout boxes */
+.callout {
+  padding: 1rem 1.25rem;
+  border-radius: 6px;
+  margin: 1.5rem 0;
+  border-left: 4px solid;
+}
+
+.callout-warning {
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
+}
+
+.callout-issue {
+  background: var(--issue-bg);
+  border-color: var(--issue-border);
+}
+
+.callout-decided {
+  background: var(--decided-bg);
+  border-color: var(--decided-border);
+}
+
+.callout-example {
+  background: var(--example-bg);
+  border-color: var(--example-border);
+}
+
+.callout h4 {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+th, td {
+  padding: 0.75rem;
+  text-align: left;
+  border: 1px solid var(--border-color);
+}
+
+th {
+  background: var(--code-bg);
+  font-weight: 600;
+}
+
+/* Diagram boxes */
+.diagram {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  font-family: monospace;
+  white-space: pre;
+  overflow-x: auto;
+  line-height: 1.4;
+}
+
+/* Status badges */
+.badge {
+  display: inline-block;
+  padding: 0.25em 0.6em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.badge-open { background: #fef3c7; color: #92400e; }
+.badge-decided { background: #dcfce7; color: #166534; }
+.badge-wip { background: #dbeafe; color: #1e40af; }
+
+/* Sidebar status indicators */
+.sidebar nav ul li a .status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.status-dot.unreviewed { background: #94a3b8; }
+.status-dot.designed { background: #22c55e; }
+.status-dot.in-progress { background: #3b82f6; }
+.status-dot.ready { background: #22c55e; box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3); }
+
+/* Page header with title and navigation */
+.page-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  margin: -2rem -3rem 2rem -3rem;
+  width: calc(100vw - 280px);  /* Full viewport width minus sidebar */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.page-header h1 {
+  background: #94a3b8;  /* Light slate blue */
+  color: var(--sidebar-bg);  /* Dark text like sidebar background */
+  font-size: 1.5rem;
+  margin: 0;
+  padding: 1rem 3rem;
+  border: none;
+  font-weight: 600;
+}
+
+.page-nav {
+  display: flex;
+  gap: 0;
+  background: #cbd5e1;  /* Lighter background like title area */
+  border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+.page-nav-item {
+  padding: 0.75rem 1.5rem;
+  color: var(--sidebar-bg);  /* Dark text like sidebar background */
+  font-weight: 500;
+  font-size: 0.9rem;
+  border-right: 1px solid rgba(0,0,0,0.1);
+  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.page-nav-item:last-child {
+  border-right: none;
+}
+
+.page-nav-item:hover {
+  background: #b8c5d4;
+  color: var(--sidebar-bg);
+  text-decoration: none;
+}
+
+/* Links */
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    position: relative;
+    height: auto;
+  }
+  
+  .main-content {
+    margin-left: 0;
+    padding: 1rem;
+  }
+}
