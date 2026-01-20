@@ -8,9 +8,8 @@ classdef ProjectionEngineTest < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setupTest(testCase)
-            testCase.TestDataFolder = fullfile(fileparts(mfilename('fullpath')), 'data');
-            testCase.Engine = appFramework.projection.ProjectionEngine();
-            testCase.Engine.loadMaps(testCase.TestDataFolder);
+            testCase.TestDataFolder = fullfile(fileparts(mfilename('fullpath')), '..', 'data');
+            testCase.Engine = appFramework.projection.ProjectionEngine(testCase.TestDataFolder);
         end
     end
     

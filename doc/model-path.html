@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Model Path - App Framework</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <h1>App Framework Spec</h1>
+      <nav>
+        <ul>
+          <li class="section-header">Overview</li>
+          <li><a href="index.html"><span class="status-dot ready"></span>Introduction</a></li>
+          <li><a href="architecture.html"><span class="status-dot ready"></span>Architecture Overview</a></li>
+          <li><a href="roadmap.html"><span class="status-dot unreviewed"></span>Implementation Roadmap</a></li>
+
+          <li class="section-header">Model</li>
+          <li><a href="projection-schema.html"><span class="status-dot ready"></span>Projection Schema</a></li>
+          <li><a href="projection-engine.html"><span class="status-dot ready"></span>Projection Engine</a></li>
+          <li><a href="model-path.html"><span class="status-dot ready"></span>Model Path</a></li>
+          <li><a href="client-classes.html"><span class="status-dot unreviewed"></span>Client Class Generation</a></li>
+
+          <li class="section-header">Core Framework</li>
+          <li><a href="event-system.html"><span class="status-dot unreviewed"></span>Event System</a></li>
+          <li><a href="client-model.html"><span class="status-dot unreviewed"></span>Client Model</a></li>
+          <li><a href="binding.html"><span class="status-dot unreviewed"></span>Data Binding</a></li>
+          <li><a href="view-layer.html"><span class="status-dot unreviewed"></span>View Layer</a></li>
+
+          <li class="section-header">Server Integration</li>
+          <li><a href="server-sync.html"><span class="status-dot unreviewed"></span>Server Sync Layer</a></li>
+          <li><a href="matlab-controller.html"><span class="status-dot unreviewed"></span>MATLAB Controller</a></li>
+          <li><a href="service-layer.html"><span class="status-dot unreviewed"></span>Service Layer</a></li>
+
+          <li class="section-header">Design Decisions</li>
+          <li><a href="open-issues.html"><span class="status-dot unreviewed"></span>Open Issues</a></li>
+          <li><a href="coding-guidelines.html"><span class="status-dot unreviewed"></span>Coding Guidelines</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Model Path</h1>
+        <nav class="page-nav">
+          <a href="#use-cases" class="page-nav-item">Use Cases</a>
+          <a href="#requirements" class="page-nav-item">Requirements</a>
+          <a href="#design" class="page-nav-item">Architectural Design</a>
+        </nav>
+      </div>
+
+      <p>The <strong>ModelPath</strong> utility provides a standardized way to navigate through an object graph in the 
+        app framework. It allows controllers to locate and interact with objects nested within the model using a simple 
+        dot-notation syntax with array indexing.</p>
+
+      <h2 id="use-cases">Use Cases</h2>
+
+      <p>The AbstractController needs to support UI-driven operations on objects anywhere in the model hierarchy.</p>
+
+      <h3>Use Case 1: Navigate to Nested Objects</h3>
+      <p>The UI needs to reference objects nested within the model hierarchy for property access or method calls.</p>
+
+      <div class="callout callout-info">
+        <h4>Characteristics</h4>
+        <ul>
+          <li>Objects can be nested multiple levels deep (e.g., <code>Analysis.Model.Species[1]</code>)</li>
+          <li>Arrays of objects need indexed access</li>
+          <li>The path format must be simple enough for the JS client to construct</li>
+        </ul>
+      </div>
+
+      <div class="callout callout-example">
+        <h4>Example</h4>
+        <p>The UI wants to display the name of the first species in the model. It sends a path 
+          <code>"Model.Species[1]"</code> to locate the species object, then accesses its <code>Name</code> property.</p>
+      </div>
+
+      <h3>Use Case 2: Direct Property Access</h3>
+      <p>Once an object is resolved, the controller needs direct access for reading and writing properties.</p>
+
+      <div class="callout callout-info">
+        <h4>Characteristics</h4>
+        <ul>
+          <li>Handle objects allow direct property assignment</li>
+          <li>Multiple properties may need to be accessed in one operation</li>
+          <li>Avoids overhead of repeated path resolution</li>
+        </ul>
+      </div>
+
+      <h3>Use Case 3: Method Invocation</h3>
+      <p>The controller needs to invoke methods on resolved objects for validation, computation, or state changes.</p>
+
+      <div class="callout callout-info">
+        <h4>Characteristics</h4>
+        <ul>
+          <li>Methods may take arguments and return values</li>
+          <li>Error handling should provide meaningful feedback to the UI</li>
+        </ul>
+      </div>
+
+      <h2 id="requirements">Requirements</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Requirement</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>R-DotNotation</td>
+            <td>Path strings must use dot notation to navigate nested properties (e.g., <code>"Model.Species"</code>)</td>
+          </tr>
+          <tr>
+            <td>R-ArrayIndexing</td>
+            <td>Path strings must support 1-based array indexing with bracket syntax (e.g., <code>"Species[1]"</code>)</td>
+          </tr>
+          <tr>
+            <td>R-MATLABNative</td>
+            <td>All indices must be 1-based (MATLAB-native). Index 0 is invalid and must throw an error.</td>
+          </tr>
+          <tr>
+            <td>R-EmptyPath</td>
+            <td>An empty path string (<code>""</code>) must resolve to the root object</td>
+          </tr>
+          <tr>
+            <td>R-ResolveObject</td>
+            <td>The path must resolve to an object reference that can be used for direct property access</td>
+          </tr>
+          <tr>
+            <td>R-ErrorHandling</td>
+            <td>Invalid paths must produce clear error messages (invalid property, index out of bounds, bad syntax)</td>
+          </tr>
+          <tr>
+            <td>R-Validation</td>
+            <td>Path syntax must be validated before resolution to catch errors early</td>
+          </tr>
+          <tr>
+            <td>NR-ReferenceIDLookup</td>
+            <td><strong>Future Enhancement:</strong> Support <code>[#ID]</code> syntax for referenceID-based lookup instead of index</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="design">Architectural Design</h2>
+
+      <h3>Path Syntax</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Pattern</th>
+            <th>Description</th>
+            <th>Example</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>""</code></td>
+            <td>Empty path - refers to root object</td>
+            <td>Root object itself</td>
+          </tr>
+          <tr>
+            <td><code>"PropertyName"</code></td>
+            <td>Direct property of root</td>
+            <td><code>"Name"</code> → <code>root.Name</code></td>
+          </tr>
+          <tr>
+            <td><code>"Parent.Child"</code></td>
+            <td>Nested property access</td>
+            <td><code>"Config.Settings"</code> → <code>root.Config.Settings</code></td>
+          </tr>
+          <tr>
+            <td><code>"Array[n]"</code></td>
+            <td>Array element (1-indexed)</td>
+            <td><code>"Species[1]"</code> → <code>root.Species(1)</code></td>
+          </tr>
+          <tr>
+            <td><code>"Array[n].Prop"</code></td>
+            <td>Property of array element</td>
+            <td><code>"Species[1].Name"</code> → <code>root.Species(1).Name</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>MATLAB Classes</h3>
+
+      <h4>appFramework.utils.ModelPath</h4>
+
+      <p>Utility class for parsing and resolving model paths.</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>ModelPath(pathString)</code></td>
+            <td>Constructor - parses and validates the path string</td>
+          </tr>
+          <tr>
+            <td><code>resolve(rootObject)</code></td>
+            <td>Resolves the path starting from the given root object, returns the target object</td>
+          </tr>
+          <tr>
+            <td><code>validatePathString(pathString)</code></td>
+            <td>Static method - validates path syntax without resolving</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>appFramework.AbstractController (protected methods)</h4>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>resolveObject(objectPath)</code></td>
+            <td>Resolves path to get a direct object reference for property access</td>
+          </tr>
+          <tr>
+            <td><code>invoke(objectPath, methodName, args)</code></td>
+            <td>Resolves path and invokes the specified method with arguments</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>JavaScript Classes (TBD)</h3>
+
+      <p>The JavaScript client will need a corresponding <code>ModelPath</code> class to:</p>
+      <ul>
+        <li>Construct path strings from UI interactions</li>
+        <li>Convert 0-based JavaScript indices to 1-based MATLAB indices</li>
+        <li>Parse paths received from the server</li>
+      </ul>
+
+      <h3>Usage Examples</h3>
+
+      <div class="callout callout-example">
+        <h4>Resolving and Accessing Properties</h4>
+        <pre><code>% Get reference to nested object
+child = ctrl.resolveObject("Children[1]");
+
+% Direct property access (preferred for multiple operations)
+child.Name = "NewName";
+child.Value = 100;
+child.validate();</code></pre>
+      </div>
+
+      <div class="callout callout-example">
+        <h4>Method Invocation</h4>
+        <pre><code>% Call a method on a nested object
+ctrl.invoke("Species[1]", "validate", {})
+ctrl.invoke("Children[2]", "reset", {})</code></pre>
+      </div>
+
+      <h3>Error Handling</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Error ID</th>
+            <th>Cause</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>appFramework:utils:InvalidPath</code></td>
+            <td>Property not found at path segment</td>
+          </tr>
+          <tr>
+            <td><code>appFramework:utils:IndexOutOfBounds</code></td>
+            <td>Array index exceeds array size</td>
+          </tr>
+          <tr>
+            <td><code>appFramework:utils:InvalidIndex</code></td>
+            <td>Index is less than 1 (must be 1-based)</td>
+          </tr>
+          <tr>
+            <td><code>appFramework:utils:InvalidPathSyntax</code></td>
+            <td>Malformed bracket syntax in path</td>
+          </tr>
+          <tr>
+            <td><code>appFramework:utils:UnmatchedBrackets</code></td>
+            <td>Missing opening or closing bracket</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Limitations</h3>
+
+      <ul>
+        <li><strong>Primitive Arrays:</strong> Cannot navigate into primitive arrays (<code>double[]</code>, <code>string[]</code>). Replace entire array instead.</li>
+        <li><strong>Index Bounds:</strong> Out-of-bounds indices throw errors.</li>
+      </ul>
+
+      <h2>Related Pages</h2>
+
+      <ul>
+        <li><a href="projection-engine.html">Projection Engine</a> - Object-to-JSON conversion</li>
+        <li><a href="matlab-controller.html">MATLAB Controller</a> - AbstractController class documentation</li>
+      </ul>
+
+    </main>
+  </div>
+</body>
+
+</html>

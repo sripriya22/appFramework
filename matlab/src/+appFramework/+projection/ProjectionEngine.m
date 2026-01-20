@@ -5,8 +5,7 @@ classdef ProjectionEngine < handle
     % methods to convert MATLAB objects to JSON-compatible structs.
     %
     % Example:
-    %   engine = appFramework.projection.ProjectionEngine();
-    %   engine.loadMaps(fullfile(pwd, 'shared', 'model-projection'));
+    %   engine = appFramework.projection.ProjectionEngine(fullfile(pwd, 'shared', 'model-projection'));
     %   jsonStruct = engine.toJSON(analysisObj);
     %   jsonString = jsonencode(jsonStruct);
     
@@ -15,12 +14,22 @@ classdef ProjectionEngine < handle
     end
     
     methods
-        function obj = ProjectionEngine()
-            % ProjectionEngine - Construct an empty ProjectionEngine
+        function obj = ProjectionEngine(folderPath)
+            % ProjectionEngine - Construct a ProjectionEngine and load maps
+            %
+            % Inputs:
+            %   folderPath - Path to folder containing projection map JSON files
+            
+            arguments
+                folderPath (1,1) string
+            end
             
             obj.Maps = dictionary(string.empty, cell.empty);
+            obj.loadMaps(folderPath);
         end
-        
+    end
+    
+    methods (Access = private)
         function loadMaps(obj, folderPath)
             % loadMaps - Load all projection map JSON files from a folder
             %
@@ -70,7 +79,9 @@ classdef ProjectionEngine < handle
                 end
             end
         end
-        
+    end
+    
+    methods
         function projMap = getMap(obj, matlabClassName)
             % getMap - Get the ProjectionMap for a MATLAB class
             %

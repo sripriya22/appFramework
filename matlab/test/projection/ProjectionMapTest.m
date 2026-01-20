@@ -2,16 +2,16 @@ classdef ProjectionMapTest < matlab.unittest.TestCase
     % ProjectionMapTest - Unit tests for ProjectionMap class
     
     properties (TestParameter)
-        TestDataFolder = {fullfile(fileparts(mfilename('fullpath')), 'data')}
+        TestDataFolder = {fullfile(fileparts(mfilename('fullpath')), '..', 'data')}
     end
     
     methods (Test)
         function testLoadSimpleObject(testCase, TestDataFolder)
             % Test loading a simple projection map
             jsonPath = fullfile(TestDataFolder, 'simple-object.json');
-            engine = appFramework.projection.ProjectionEngine();
+            engine = appFramework.projection.ProjectionEngine(TestDataFolder);
             
-            map = appFramework.projection.ProjectionMap(jsonPath, engine);
+            map = engine.getMap("testClasses.SimpleObject");
             
             testCase.verifyEqual(map.MATLABClass, "testClasses.SimpleObject");
             testCase.verifyEqual(map.JSClass, "SimpleObject");
@@ -20,9 +20,8 @@ classdef ProjectionMapTest < matlab.unittest.TestCase
         
         function testGetPropertyNames(testCase, TestDataFolder)
             % Test getting property names
-            jsonPath = fullfile(TestDataFolder, 'simple-object.json');
-            engine = appFramework.projection.ProjectionEngine();
-            map = appFramework.projection.ProjectionMap(jsonPath, engine);
+            engine = appFramework.projection.ProjectionEngine(TestDataFolder);
+            map = engine.getMap("testClasses.SimpleObject");
             
             propNames = map.getPropertyNames();
             
@@ -34,9 +33,8 @@ classdef ProjectionMapTest < matlab.unittest.TestCase
         
         function testGetPropertyDefinition(testCase, TestDataFolder)
             % Test getting a property definition
-            jsonPath = fullfile(TestDataFolder, 'simple-object.json');
-            engine = appFramework.projection.ProjectionEngine();
-            map = appFramework.projection.ProjectionMap(jsonPath, engine);
+            engine = appFramework.projection.ProjectionEngine(TestDataFolder);
+            map = engine.getMap("testClasses.SimpleObject");
             
             propDef = map.getPropertyDefinition("Name");
             
@@ -48,9 +46,8 @@ classdef ProjectionMapTest < matlab.unittest.TestCase
         
         function testGetPropertyDefinitionNotFound(testCase, TestDataFolder)
             % Test error when property not found
-            jsonPath = fullfile(TestDataFolder, 'simple-object.json');
-            engine = appFramework.projection.ProjectionEngine();
-            map = appFramework.projection.ProjectionMap(jsonPath, engine);
+            engine = appFramework.projection.ProjectionEngine(TestDataFolder);
+            map = engine.getMap("testClasses.SimpleObject");
             
             testCase.verifyError(...
                 @() map.getPropertyDefinition("NonExistent"), ...
@@ -59,9 +56,8 @@ classdef ProjectionMapTest < matlab.unittest.TestCase
         
         function testHasProperty(testCase, TestDataFolder)
             % Test hasProperty method
-            jsonPath = fullfile(TestDataFolder, 'simple-object.json');
-            engine = appFramework.projection.ProjectionEngine();
-            map = appFramework.projection.ProjectionMap(jsonPath, engine);
+            engine = appFramework.projection.ProjectionEngine(TestDataFolder);
+            map = engine.getMap("testClasses.SimpleObject");
             
             testCase.verifyTrue(map.hasProperty("Name"));
             testCase.verifyFalse(map.hasProperty("NonExistent"));
@@ -69,9 +65,8 @@ classdef ProjectionMapTest < matlab.unittest.TestCase
         
         function testLoadParentWithNestedTypes(testCase, TestDataFolder)
             % Test loading a map with nested object types
-            jsonPath = fullfile(TestDataFolder, 'parent-object.json');
-            engine = appFramework.projection.ProjectionEngine();
-            map = appFramework.projection.ProjectionMap(jsonPath, engine);
+            engine = appFramework.projection.ProjectionEngine(TestDataFolder);
+            map = engine.getMap("testClasses.ParentObject");
             
             testCase.verifyEqual(map.MATLABClass, "testClasses.ParentObject");
             
@@ -82,9 +77,8 @@ classdef ProjectionMapTest < matlab.unittest.TestCase
         
         function testArrayAndReferenceProperties(testCase, TestDataFolder)
             % Test properties with IsArray and IsReference flags
-            jsonPath = fullfile(TestDataFolder, 'parent-object.json');
-            engine = appFramework.projection.ProjectionEngine();
-            map = appFramework.projection.ProjectionMap(jsonPath, engine);
+            engine = appFramework.projection.ProjectionEngine(TestDataFolder);
+            map = engine.getMap("testClasses.ParentObject");
             
             childrenDef = map.getPropertyDefinition("Children");
             testCase.verifyTrue(childrenDef.IsArray);
@@ -95,12 +89,11 @@ classdef ProjectionMapTest < matlab.unittest.TestCase
             testCase.verifyTrue(selectedDef.IsReference);
         end
         
-        function testFileNotFound(testCase)
-            % Test error when file not found
-            engine = appFramework.projection.ProjectionEngine();
+        function testFolderNotFound(testCase)
+            % Test error when folder not found
             testCase.verifyError(...
-                @() appFramework.projection.ProjectionMap('/nonexistent/path.json', engine), ...
-                'appFramework:projection:FileNotFound');
+                @() appFramework.projection.ProjectionEngine('/nonexistent/path'), ...
+                'appFramework:projection:FolderNotFound');
         end
     end
 end
