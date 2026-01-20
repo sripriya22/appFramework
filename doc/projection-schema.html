@@ -21,6 +21,7 @@
 
           <li class="section-header">Model</li>
           <li><a href="projection-schema.html" class="active"><span class="status-dot ready"></span>Projection Schema</a></li>
+          <li><a href="projection-engine.html"><span class="status-dot ready"></span>Projection Engine</a></li>
           <li><a href="client-classes.html"><span class="status-dot unreviewed"></span>Client Class Generation</a></li>
 
           <li class="section-header">Core Framework</li>
@@ -210,52 +211,48 @@
 
       <h3>Example</h3>
 
-      <h4>Referenced Projection Map (example)</h4>
+      <h4>Example Projection Maps</h4>
       <div class="callout callout-example">
-        <p>Example projection map for the root model object:</p>
+        <p>Example projection map for the Analysis object. Note that <code>Type</code> uses the full MATLAB class name for objects:</p>
         <pre><code class="language-json">{
   "MATLABClass": "PKPD.Analysis",
-  "JSClass": "gPKPDSim_Analysis",
+  "JSClass": "Analysis",
   "Properties": {
     "StopTime": {
-      "Type": "number"
+      "Type": "double"
     },
-    "Model": {
-      "Type": "ModelProjection",
-      "ClientReadOnly": true
+    "ModelObj": {
+      "Type": "SimBiology.Model",
+      "ReadOnly": true
     },
     "SelectedSpecies": {
-      "Type": "SpeciesProjection",
+      "Type": "SimBiology.Species",
       "IsArray": true,
       "IsReference": true
     }
-  },
-  "ProjectionMaps": {
-    "ModelProjection": "shared/model-projection/model.json",
-    "SpeciesProjection": "shared/model-projection/species.json"
   }
 }</code></pre>
-        <p>The referenced <code>shared/model-projection/species.json</code> file:</p>
+        <p>The <code>species.json</code> projection map file:</p>
         <pre><code class="language-json">{
   "MATLABClass": "SimBiology.Species",
-  "JSClass": "SimBiology_Species",
+  "JSClass": "Species",
   "ReferenceIDProperty": "SessionID",
   "Properties": {
     "SessionID": {
-      "Type": "number",
+      "Type": "double",
       "ReadOnly": true
     },
     "Name": {
       "Type": "string",
-      "ClientReadOnly": true
+      "ReadOnly": true
     },
-    "InitialAmount": {
-      "Type": "number",
-      "ClientReadOnly": false
+    "Value": {
+      "Type": "double",
+      "ReadOnly": true
     },
     "Units": {
       "Type": "string",
-      "ClientReadOnly": false
+      "ReadOnly": true
     }
   }
 }</code></pre>
@@ -302,14 +299,6 @@
               definition object (see Property Definition Fields below).</td>
           </tr>
           <tr>
-            <td><code>ProjectionMaps</code></td>
-            <td>object</td>
-            <td>No</td>
-            <td><code>{}</code></td>
-            <td>Maps type names to external projection map file paths. Used when a property references another
-              projection map.</td>
-          </tr>
-          <tr>
             <td><code>ReferenceIDProperty</code></td>
             <td>String</td>
             <td>No</td>
@@ -341,9 +330,7 @@
             <td>string</td>
             <td>Yes</td>
             <td>-</td>
-            <td>JavaScript primitive type (<code>"number"</code>, <code>"string"</code>, <code>"boolean"</code>,
-              <code>"object"</code>) or a projection map type name. If not a primitive type, must be defined in
-              <code>ProjectionMaps</code>.</td>
+            <td>Primitive type (<code>"double"</code>, <code>"string"</code>, <code>"logical"</code>) or a fully qualified MATLAB class name (e.g., <code>"SimBiology.Species"</code>). The engine looks up nested types by class name.</td>
           </tr>
           <tr>
             <td><code>IsArray</code></td>

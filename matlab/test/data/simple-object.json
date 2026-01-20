@@ -1,0 +1,20 @@
+{
+  "MATLABClass": "testClasses.SimpleObject",
+  "JSClass": "SimpleObject",
+  "ReferenceIDProperty": "SessionID",
+  "Properties": {
+    "SessionID": {
+      "Type": "double",
+      "ReadOnly": true
+    },
+    "Name": {
+      "Type": "string"
+    },
+    "Value": {
+      "Type": "double"
+    },
+    "IsActive": {
+      "Type": "logical"
+    }
+  }
+}

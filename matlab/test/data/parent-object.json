@@ -1,0 +1,30 @@
+{
+  "MATLABClass": "testClasses.ParentObject",
+  "JSClass": "ParentObject",
+  "ReferenceIDProperty": "SessionID",
+  "Properties": {
+    "SessionID": {
+      "Type": "double",
+      "ReadOnly": true
+    },
+    "Name": {
+      "Type": "string"
+    },
+    "Children": {
+      "Type": "testClasses.ChildObject",
+      "IsArray": true,
+      "IsReference": false
+    },
+    "SelectedChildren": {
+      "Type": "testClasses.ChildObject",
+      "IsArray": true,
+      "IsReference": true
+    },
+    "StartTime": {
+      "Type": "double"
+    },
+    "StopTime": {
+      "Type": "double"
+    }
+  }
+}

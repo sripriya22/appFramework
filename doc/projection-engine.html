@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projection Engine - App Framework</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <h1>App Framework Spec</h1>
+      <nav>
+        <ul>
+          <li class="section-header">Overview</li>
+          <li><a href="index.html"><span class="status-dot ready"></span>Introduction</a></li>
+          <li><a href="architecture.html"><span class="status-dot ready"></span>Architecture Overview</a></li>
+          <li><a href="roadmap.html"><span class="status-dot unreviewed"></span>Implementation Roadmap</a></li>
+
+          <li class="section-header">Model</li>
+          <li><a href="projection-schema.html"><span class="status-dot ready"></span>Projection Schema</a></li>
+          <li><a href="projection-engine.html" class="active"><span class="status-dot ready"></span>Projection Engine</a></li>
+          <li><a href="client-classes.html"><span class="status-dot unreviewed"></span>Client Class Generation</a></li>
+
+          <li class="section-header">Core Framework</li>
+          <li><a href="event-system.html"><span class="status-dot unreviewed"></span>Event System</a></li>
+          <li><a href="client-model.html"><span class="status-dot unreviewed"></span>Client Model</a></li>
+          <li><a href="binding.html"><span class="status-dot unreviewed"></span>Data Binding</a></li>
+          <li><a href="view-layer.html"><span class="status-dot unreviewed"></span>View Layer</a></li>
+
+          <li class="section-header">Server Integration</li>
+          <li><a href="server-sync.html"><span class="status-dot unreviewed"></span>Server Sync Layer</a></li>
+          <li><a href="matlab-controller.html"><span class="status-dot unreviewed"></span>MATLAB Controller</a></li>
+          <li><a href="service-layer.html"><span class="status-dot unreviewed"></span>Service Layer</a></li>
+
+          <li class="section-header">Design Decisions</li>
+          <li><a href="open-issues.html"><span class="status-dot unreviewed"></span>Open Issues</a></li>
+          <li><a href="coding-guidelines.html"><span class="status-dot unreviewed"></span>Coding Guidelines</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+    <div class="page-header">
+      <h1>Projection Engine</h1>
+      <nav class="page-nav">
+        <a href="#overview" class="page-nav-item">Overview</a>
+        <a href="#classes" class="page-nav-item">Classes</a>
+        <a href="#usage" class="page-nav-item">Usage</a>
+        <a href="#reference-handling" class="page-nav-item">Reference Handling</a>
+      </nav>
+    </div>
+
+    <h2 id="overview">Overview</h2>
+
+    <p>The <strong>Projection Engine</strong> is a MATLAB library that converts MATLAB objects to JSON based on
+      projection map definitions. It provides:</p>
+
+    <ul>
+      <li>Loading projection maps from a folder of JSON files</li>
+      <li>Converting MATLAB objects to JSON structs suitable for <code>jsonencode()</code></li>
+      <li>Recursive handling of nested objects</li>
+      <li>Reference resolution for objects owned elsewhere in the hierarchy</li>
+    </ul>
+
+    <h2 id="classes">Classes</h2>
+
+    <p>All classes are in the <code>appFramework.projection</code> namespace.</p>
+
+    <h3>ProjectionEngine</h3>
+
+    <p>The main entry point for loading projection maps and converting objects to JSON.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>loadMaps(folderPath)</code></td>
+          <td>Load all projection map JSON files from the specified folder. Creates ProjectionMap objects and sets
+            engine references for nested lookups.</td>
+        </tr>
+        <tr>
+          <td><code>toJSON(obj)</code></td>
+          <td>Convert a MATLAB object to a JSON-compatible struct using the registered projection map for its class.
+          </td>
+        </tr>
+        <tr>
+          <td><code>toJSON(obj, propertySubset)</code></td>
+          <td>Convert a MATLAB object using only the specified subset of properties.</td>
+        </tr>
+        <tr>
+          <td><code>getMap(matlabClassName)</code></td>
+          <td>Retrieve the ProjectionMap for a given MATLAB class name.</td>
+        </tr>
+        <tr>
+          <td><code>hasMap(matlabClassName)</code></td>
+          <td>Check if a projection map exists for the given MATLAB class.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>ProjectionMap</h3>
+
+    <p>Represents a single projection map definition loaded from a JSON file.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Property</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>MATLABClass</code></td>
+          <td>string</td>
+          <td>Fully qualified MATLAB class name</td>
+        </tr>
+        <tr>
+          <td><code>JSClass</code></td>
+          <td>string</td>
+          <td>JavaScript class name</td>
+        </tr>
+        <tr>
+          <td><code>ReferenceIDProperty</code></td>
+          <td>string or string[]</td>
+          <td>Property name(s) used to identify this object when referenced</td>
+        </tr>
+        <tr>
+          <td><code>Properties</code></td>
+          <td>dictionary</td>
+          <td>Map of property names to PropertyDefinition objects</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>getPropertyNames()</code></td>
+          <td>Returns string array of all property names in this map</td>
+        </tr>
+        <tr>
+          <td><code>getPropertyDefinition(name)</code></td>
+          <td>Returns the PropertyDefinition for the specified property</td>
+        </tr>
+        <tr>
+          <td><code>getNestedMap(matlabClassName)</code></td>
+          <td>Returns the ProjectionMap for a nested type by querying the engine</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>PropertyDefinition</h3>
+
+    <p>Value object representing the definition of a single property within a projection map.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Property</th>
+          <th>Type</th>
+          <th>Default</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>Name</code></td>
+          <td>string</td>
+          <td>-</td>
+          <td>Property name</td>
+        </tr>
+        <tr>
+          <td><code>Type</code></td>
+          <td>string</td>
+          <td>-</td>
+          <td>Type: primitive ("string", "double", "logical") or MATLAB class name</td>
+        </tr>
+        <tr>
+          <td><code>IsArray</code></td>
+          <td>logical</td>
+          <td>false</td>
+          <td>True if property is an array</td>
+        </tr>
+        <tr>
+          <td><code>IsReference</code></td>
+          <td>logical</td>
+          <td>false</td>
+          <td>True if property holds references to objects owned elsewhere</td>
+        </tr>
+        <tr>
+          <td><code>ReadOnly</code></td>
+          <td>logical</td>
+          <td>false</td>
+          <td>True if property has SetAccess=private in MATLAB</td>
+        </tr>
+        <tr>
+          <td><code>ClientReadOnly</code></td>
+          <td>logical</td>
+          <td>false</td>
+          <td>True if client should not modify this property</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="usage">Usage</h2>
+
+    <h3>Basic Example</h3>
+
+    <pre><code>% Create engine and load projection maps
+engine = appFramework.projection.ProjectionEngine();
+engine.loadMaps(fullfile(pwd, 'shared', 'model-projection'));
+
+% Convert an Analysis object to JSON
+analysisObj = PKPD.Analysis();
+jsonStruct = engine.toJSON(analysisObj);
+
+% Encode to JSON string
+jsonString = jsonencode(jsonStruct);</code></pre>
+
+    <h3>Property Subset</h3>
+
+    <pre><code>% Convert only specific properties
+jsonStruct = engine.toJSON(analysisObj, ["StartTime", "StopTime", "TimeStep"]);</code></pre>
+
+    <h2 id="reference-handling">Reference Handling</h2>
+
+    <p>When a property has <code>IsReference=true</code>, the engine outputs a struct containing only the reference ID
+      properties, not the full object. This avoids duplicating data for objects that are owned elsewhere in the
+      hierarchy.</p>
+
+    <h3>Example</h3>
+
+    <p>Given <code>SelectedSpecies</code> with <code>IsReference=true</code> and SimBiology.Species having
+      <code>ReferenceIDProperty="SessionID"</code>:</p>
+
+    <pre><code>% Input: Analysis.SelectedSpecies = [speciesA, speciesB]
+% Output JSON:
+{
+  "SelectedSpecies": [
+    {"SessionID": 12345},
+    {"SessionID": 12346}
+  ]
+}</code></pre>
+
+    <p>For multi-property references (e.g., submodels), the reference struct includes all reference ID properties:</p>
+
+    <pre><code>% If ReferenceIDProperty = ["ModelSessionID", "SessionID"]
+{
+  "SelectedSpecies": [
+    {"ModelSessionID": "model1", "SessionID": "species1"}
+  ]
+}</code></pre>
+
+    <h2 id="error-handling">Error Handling</h2>
+
+    <p>The projection engine throws errors in the following cases:</p>
+
+    <ul>
+      <li><strong>Missing property:</strong> If a property defined in the projection map does not exist on the source
+        object</li>
+      <li><strong>Unknown class:</strong> If <code>toJSON()</code> is called with an object whose class has no
+        registered projection map</li>
+      <li><strong>Unresolved nested map:</strong> If a property references a type that was not loaded</li>
+    </ul>
+
+  </main>
+  </div>
+</body>
+
+</html>

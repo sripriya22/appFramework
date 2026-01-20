@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "projection-schema.json",
+  "title": "Projection Map Schema",
+  "description": "Schema for defining MATLAB to JavaScript object projections",
+  "type": "object",
+  "required": ["MATLABClass", "JSClass", "Properties"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Reference to this schema file"
+    },
+    "MATLABClass": {
+      "type": "string",
+      "description": "Fully qualified MATLAB class name (e.g., 'PKPD.Analysis')"
+    },
+    "JSClass": {
+      "type": "string",
+      "description": "JavaScript class name for the client-side model"
+    },
+    "ReferenceIDProperty": {
+      "type": "string",
+      "description": "Property name used to uniquely identify objects for reference resolution"
+    },
+    "Properties": {
+      "type": "object",
+      "description": "Map of property names to their definitions",
+      "additionalProperties": {
+        "$ref": "#/definitions/PropertyDefinition"
+      }
+    },
+    "ProjectionMaps": {
+      "type": "object",
+      "description": "Map of type names to their projection map file paths",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  },
+  "definitions": {
+    "PropertyDefinition": {
+      "type": "object",
+      "required": ["Type"],
+      "properties": {
+        "Type": {
+          "type": "string",
+          "description": "Property type: primitive (string, double, logical) or custom type name"
+        },
+        "IsArray": {
+          "type": "boolean",
+          "default": false,
+          "description": "True if property is an array of the specified type"
+        },
+        "IsReference": {
+          "type": "boolean",
+          "default": false,
+          "description": "True if property holds references to objects (only ReferenceIDProperty is synced)"
+        },
+        "ReadOnly": {
+          "type": "boolean",
+          "default": false,
+          "description": "True if property has SetAccess=private in MATLAB"
+        },
+        "ClientReadOnly": {
+          "type": "boolean",
+          "description": "True if client should not modify this property (defaults to ReadOnly value)"
+        },
+        "Description": {
+          "type": "string",
+          "description": "Optional description of the property"
+        }
+      }
+    }
+  }
+}
