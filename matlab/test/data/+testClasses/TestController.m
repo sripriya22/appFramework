@@ -20,23 +20,37 @@ classdef TestController < appFramework.AbstractController
             obj@appFramework.AbstractController(htmlComponent);
         end
         
-        function onUpdateName(obj, data)
-            % Handler for UpdateName events
+        function results = handleUpdateName(obj, inputs)
+            % Handler for UpdateName - update root object name
+            arguments
+                obj
+                inputs.Value (1,1) string
+            end
             target = obj.resolveObject("");
-            target.Name = data.value;
+            target.Name = inputs.Value;
+            results = struct('Name', target.Name);
         end
         
-        function onUpdateValue(obj, data)
-            % Handler for UpdateValue events
+        function results = handleUpdateValue(obj, inputs)
+            % Handler for UpdateValue - update root object value
+            arguments
+                obj
+                inputs.Value (1,1) double
+            end
             target = obj.resolveObject("");
-            target.Value = data.value;
+            target.Value = inputs.Value;
+            results = struct('Value', target.Value);
         end
         
-        function onGetModel(obj, ~)
-            % Handler for GetModel events - sends model to UI
+        function results = handleGetModel(obj)
+            % Handler for GetModel - returns model JSON
+            arguments
+                obj
+            end
             if obj.hasRootObject()
-                jsonData = obj.toJSON();
-                obj.notifyUI("ModelLoaded", jsonData);
+                results = struct('Model', obj.toJSON());
+            else
+                results = struct('Model', struct());
             end
         end
         
@@ -48,17 +62,6 @@ classdef TestController < appFramework.AbstractController
         function testResetRootObject(obj)
             % Public wrapper for testing - delegates to protected method
             obj.resetRootObject();
-        end
-        
-        function result = testInvoke(obj, objectPath, methodName, args)
-            % Public wrapper for testing - delegates to protected method
-            arguments
-                obj
-                objectPath (1,1) string
-                methodName (1,1) string
-                args (1,:) cell = {}
-            end
-            result = obj.invoke(objectPath, methodName, args);
         end
         
         function result = testToJSON(obj, propertySubset)
@@ -109,16 +112,25 @@ classdef TestController < appFramework.AbstractController
             tf = ~isempty(obj.HTMLComponent) && isvalid(obj.HTMLComponent);
         end
         
-        function testHandleEvent(obj, event)
-            % Public wrapper for testing - delegates to protected handleEvent
-            obj.handleEvent(event);
+        function testDispatch(obj, event)
+            % Public wrapper for testing - delegates to protected dispatch
+            obj.dispatch(event);
         end
         
-        function simulateEvent(obj, eventName, data)
+        function simulateEvent(obj, eventType, args)
             % Test helper - simulate receiving an event from UI
-            % Uses the actual handleEvent method
-            event = struct('EventName', eventName, 'Data', data);
-            obj.handleEvent(event);
+            % Uses the actual dispatch method
+            %
+            % Inputs:
+            %   eventType - Event type (handler will be handle<EventType>)
+            %   args - Struct of named arguments for the handler
+            arguments
+                obj
+                eventType (1,1) string
+                args (1,1) struct = struct()
+            end
+            event = struct('EventType', eventType, 'Args', args);
+            obj.dispatch(event);
         end
     end
 end

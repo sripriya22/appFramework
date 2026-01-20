@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AbstractController - App Framework Spec</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <h1>App Framework Spec</h1>
+      <nav>
+        <ul>
+          <li class="section-header">Overview</li>
+          <li><a href="index.html"><span class="status-dot ready"></span>Introduction</a></li>
+          <li><a href="architecture.html"><span class="status-dot ready"></span>Architecture Overview</a></li>
+          <li><a href="roadmap.html"><span class="status-dot unreviewed"></span>Implementation Roadmap</a></li>
+
+          <li class="section-header">Model</li>
+          <li><a href="projection-schema.html"><span class="status-dot ready"></span>Projection Schema</a></li>
+          <li><a href="projection-engine.html"><span class="status-dot ready"></span>Projection Engine</a></li>
+          <li><a href="model-path.html"><span class="status-dot ready"></span>Model Path</a></li>
+          <li><a href="client-classes.html"><span class="status-dot unreviewed"></span>Client Class Generation</a></li>
+
+          <li class="section-header">Server Integration</li>
+          <li><a href="abstract-controller.html"><span class="status-dot ready"></span>AbstractController</a></li>
+          <li><a href="server-sync.html"><span class="status-dot unreviewed"></span>Server Sync Layer</a></li>
+          <li><a href="service-layer.html"><span class="status-dot unreviewed"></span>Service Layer</a></li>
+
+          <li class="section-header">Core Framework</li>
+          <li><a href="event-system.html"><span class="status-dot unreviewed"></span>Event System</a></li>
+          <li><a href="client-model.html"><span class="status-dot unreviewed"></span>Client Model</a></li>
+          <li><a href="binding.html"><span class="status-dot unreviewed"></span>Data Binding</a></li>
+          <li><a href="view-layer.html"><span class="status-dot unreviewed"></span>View Layer</a></li>
+
+          <li class="section-header">Design Decisions</li>
+          <li><a href="open-issues.html"><span class="status-dot unreviewed"></span>Open Issues</a></li>
+          <li><a href="coding-guidelines.html"><span class="status-dot unreviewed"></span>Coding Guidelines</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>AbstractController</h1>
+        <nav class="page-nav">
+          <a href="#use-cases" class="page-nav-item">Use Cases</a>
+          <a href="#requirements" class="page-nav-item">Requirements</a>
+          <a href="#design" class="page-nav-item">Architectural Design</a>
+          <a href="#implementation" class="page-nav-item">Implementation Guide</a>
+        </nav>
+      </div>
+
+      <p>The <strong>AbstractController</strong> is the base class for application controllers that manage communication
+        between a MATLAB model and a JavaScript UI via <code>uihtml</code>. It provides event dispatching, model-to-JSON
+        projection, and UI notification capabilities.</p>
+
+      <h2 id="use-cases">Use Cases</h2>
+
+      <h3>Use Case 1: Sync Entire Model to JavaScript</h3>
+      <p>The controller must be able to convert the entire MATLAB model hierarchy to JSON and send it to the JavaScript
+        client, using projection maps to define which properties are included.</p>
+
+      <div class="callout callout-info">
+        <h4>Characteristics</h4>
+        <ul>
+          <li>Uses <code>ProjectionEngine</code> with projection map files to define the conversion</li>
+          <li>Supports recursive conversion of nested objects</li>
+          <li>Automatically sends <code>RootObjectChanged</code> event when root model is set or updated</li>
+          <li>Property subsetting allows limiting what's sent to UI</li>
+        </ul>
+      </div>
+
+      <div class="callout callout-example">
+        <h4>Example</h4>
+        <p>When an Analysis is loaded, the controller calls <code>setRootObject(analysis)</code> which triggers
+          <code>toJSON()</code> on the entire model and sends the result to the UI via <code>RootObjectChanged</code>.</p>
+      </div>
+
+      <h3>Use Case 2: Event Dispatch to Specific Objects</h3>
+      <p>The UI sends events that target a specific object in the model hierarchy using a path, and the controller
+        invokes the appropriate method on that object.</p>
+
+      <div class="callout callout-info">
+        <h4>Characteristics</h4>
+        <ul>
+          <li>Events specify an <code>ObjectPath</code> to locate the target object (e.g., <code>"Model.Species[1]"</code>)</li>
+          <li>Uses <code>ModelPath</code> utility to resolve the path to the actual MATLAB object</li>
+          <li>Empty path targets the controller itself; non-empty path targets a model object</li>
+          <li>Method name defaults to <code>handle&lt;EventType&gt;</code> but can be overridden</li>
+        </ul>
+      </div>
+
+      <div class="callout callout-example">
+        <h4>Example</h4>
+        <p>UI sends event with <code>EventType: "SetUnits"</code> and <code>ObjectPath: "Model.Species[1]"</code>.
+          The controller resolves the path to the Species object and calls <code>handleSetUnits()</code> on it.</p>
+      </div>
+
+      <h3>Use Case 3: Strict Input/Output Argument Contracts</h3>
+      <p>Handler methods must have strict, validated input arguments and return structured output to ensure
+        predictable communication between UI and MATLAB.</p>
+
+      <div class="callout callout-info">
+        <h4>Characteristics</h4>
+        <ul>
+          <li>Input args use MATLAB's <code>arguments</code> block with Name-Value Pair (NVP) syntax for validation</li>
+          <li>Each input arg has explicit type and size constraints</li>
+          <li>Output is always a <code>struct</code> with named result fields</li>
+          <li>Enables compile-time checking and clear API contracts</li>
+        </ul>
+      </div>
+
+      <div class="callout callout-example">
+        <h4>Example</h4>
+        <pre><code class="language-matlab">function results = handleLoadFromFile(obj, inputs)
+    arguments
+        obj
+        inputs.FilePath (1,1) string
+        inputs.ModelName (1,1) string = missing
+    end
+    % ... implementation ...
+    results = struct('FilePath', inputs.FilePath, 'ModelName', modelName);
+end</code></pre>
+      </div>
+
+      <h2 id="requirements">Requirements</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Requirement</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>R-ObjectPath</td>
+            <td>Must be able to invoke a method on a specific object in the model hierarchy using a path string</td>
+          </tr>
+          <tr>
+            <td>R-EventDispatch</td>
+            <td>Must provide a generalizable way to dispatch to the right handler method based on UI event type</td>
+          </tr>
+          <tr>
+            <td>R-StrictArgs</td>
+            <td>Must enforce strict input/output argument checking via NVP design pattern with MATLAB <code>arguments</code> blocks</td>
+          </tr>
+          <tr>
+            <td>R-Notify</td>
+            <td>Must notify the UI of changes made to the model (e.g., <code>RootObjectChanged</code> event)</td>
+          </tr>
+          <tr>
+            <td>R-Projection</td>
+            <td>Must integrate with <code>ProjectionEngine</code> for model-to-JSON conversion</td>
+          </tr>
+          <tr>
+            <td>R-ProjectionMaps</td>
+            <td>Must provide a way to hold on to projection maps (via abstract <code>getProjectionMapsPath</code> method)</td>
+          </tr>
+          <tr>
+            <td>R-StandaloneTesting</td>
+            <td>Must support standalone testing without a connected UI by logging events</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="design">Architectural Design</h2>
+
+      <h3>Event Schema</h3>
+      <p>Events from the UI follow this schema:</p>
+
+      <div class="callout callout-example">
+        <pre><code class="language-matlab">event = struct(...
+    'EventType', 'LoadFromAnalysisFile', ...  % Required
+    'ObjectPath', '', ...                      % Optional: "" = controller, path = model object
+    'MethodName', '', ...                      % Optional: defaults to handle<EventType>
+    'Args', struct('FilePath', '/path/to/file.mat')  % Optional: named arguments
+);</code></pre>
+      </div>
+
+      <h4>Event Fields</h4>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Type</th>
+            <th>Required</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>EventType</code></td>
+            <td>string</td>
+            <td>Yes</td>
+            <td>-</td>
+            <td>Name of the event (e.g., <code>"LoadFromAnalysisFile"</code>)</td>
+          </tr>
+          <tr>
+            <td><code>ObjectPath</code></td>
+            <td>string</td>
+            <td>No</td>
+            <td><code>""</code></td>
+            <td>Path to target object. Empty string targets controller; path targets model object</td>
+          </tr>
+          <tr>
+            <td><code>MethodName</code></td>
+            <td>string</td>
+            <td>No</td>
+            <td><code>handle&lt;EventType&gt;</code></td>
+            <td>Explicit method name to call. Defaults to <code>handle</code> + <code>EventType</code></td>
+          </tr>
+          <tr>
+            <td><code>Args</code></td>
+            <td>struct</td>
+            <td>No</td>
+            <td><code>struct()</code></td>
+            <td>Named arguments to pass to the handler method</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Response Events</h3>
+      <p>The controller sends response events back to the UI:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>When Sent</th>
+            <th>Payload</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>DispatchResponse</code></td>
+            <td>Handler completes successfully</td>
+            <td><code>struct('EventType', eventType, 'Results', results)</code></td>
+          </tr>
+          <tr>
+            <td><code>DispatchError</code></td>
+            <td>Handler throws an error</td>
+            <td><code>struct('EventType', eventType, 'Error', struct('id', id, 'message', msg))</code></td>
+          </tr>
+          <tr>
+            <td><code>RootObjectChanged</code></td>
+            <td><code>setRootObject</code> is called</td>
+            <td>Full JSON representation of root object via <code>toJSON()</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Class Diagram</h3>
+
+      <div class="callout callout-info">
+        <h4>AbstractController (abstract)</h4>
+        <p><strong>Properties:</strong></p>
+        <ul>
+          <li><code>ProjectionEngine</code> - Manages projection maps</li>
+          <li><code>RootObject</code> - The root model object</li>
+          <li><code>HTMLComponent</code> - Connected uihtml component</li>
+          <li><code>EventLog</code> - Logged events for testing</li>
+        </ul>
+        <p><strong>Abstract Methods:</strong></p>
+        <ul>
+          <li><code>getProjectionMapsPath()</code> - Return path to projection map JSON files</li>
+        </ul>
+        <p><strong>Protected Methods:</strong></p>
+        <ul>
+          <li><code>dispatch(event)</code> - Route UI events to handlers</li>
+          <li><code>toJSON(propertySubset)</code> - Convert root object to JSON</li>
+          <li><code>notifyUI(eventName, data)</code> - Send event to UI</li>
+          <li><code>setRootObject(rootObj)</code> - Set root model and notify UI</li>
+          <li><code>resolveObject(objectPath)</code> - Get object at path</li>
+          <li><code>validateRootObject()</code> - Ensure root is set</li>
+        </ul>
+      </div>
+
+      <h2 id="implementation">Implementation Guide</h2>
+
+      <h3>Creating a Concrete Controller</h3>
+
+      <p>To create an application-specific controller, extend <code>AbstractController</code> and implement the required
+        methods:</p>
+
+      <div class="callout callout-example">
+        <h4>Step 1: Define the Controller Class</h4>
+        <pre><code class="language-matlab">classdef Controller < appFramework.AbstractController
+    % Controller - Controller for My Application
+    
+    properties (SetAccess = private)
+        SourceFilePath (1,1) string = ""
+    end
+    
+    methods (Access = protected)
+        function path = getProjectionMapsPath(obj) %#ok<MANU>
+            % Return path to projection map JSON files
+            path = fullfile(fileparts(mfilename('fullpath')), ...
+                '..', 'shared', 'model-projection');
+        end
+    end
+    
+    methods
+        function obj = Controller(htmlComponent)
+            arguments
+                htmlComponent matlab.ui.control.HTML {mustBeScalarOrEmpty} = ...
+                    matlab.ui.control.HTML.empty
+            end
+            obj@appFramework.AbstractController(htmlComponent);
+        end
+    end
+end</code></pre>
+      </div>
+
+      <div class="callout callout-example">
+        <h4>Step 2: Add Public CLI Methods</h4>
+        <p>Public methods provide the command-line API and delegate to handlers:</p>
+        <pre><code class="language-matlab">methods (Access = public)
+    function result = loadFromFile(obj, filePath)
+        % loadFromFile - Load model from file
+        %
+        % Inputs:
+        %   filePath - (Optional) Path to file. Opens browser if missing.
+        
+        arguments
+            obj
+            filePath (1,1) string = missing
+        end
+        
+        obj.handleLoadFromFile(FilePath=filePath);
+        result = obj.RootObject;
+    end
+end</code></pre>
+      </div>
+
+      <div class="callout callout-example">
+        <h4>Step 3: Implement Handler Methods</h4>
+        <p>Handlers use NVP inputs and return structured results:</p>
+        <pre><code class="language-matlab">methods (Access = {?appFramework.AbstractController})
+    function results = handleLoadFromFile(obj, inputs)
+        % Handler for loading from file
+        
+        arguments
+            obj
+            inputs.FilePath (1,1) string = missing
+        end
+        
+        % Open file browser if path not provided
+        if ismissing(inputs.FilePath)
+            [file, path] = uigetfile({'*.mat', 'MAT Files'});
+            if isequal(file, 0)
+                error('MyApp:Cancelled', 'File selection cancelled');
+            end
+            inputs.FilePath = fullfile(path, file);
+        end
+        
+        % Load the model
+        data = load(inputs.FilePath);
+        obj.setRootObject(data.Model);
+        obj.SourceFilePath = inputs.FilePath;
+        
+        results = struct('FilePath', inputs.FilePath);
+    end
+end</code></pre>
+      </div>
+
+      <h3>Handler Method Pattern</h3>
+
+      <p>All handler methods should follow this pattern:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Aspect</th>
+            <th>Guideline</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Naming</strong></td>
+            <td><code>handle&lt;EventType&gt;</code> - camelCase, no underscore</td>
+          </tr>
+          <tr>
+            <td><strong>Access</strong></td>
+            <td><code>Access = {?appFramework.AbstractController}</code> for dispatch access</td>
+          </tr>
+          <tr>
+            <td><strong>Inputs</strong></td>
+            <td>Use MATLAB's <code>arguments</code> block with <code>inputs.&lt;Name&gt;</code> syntax</td>
+          </tr>
+          <tr>
+            <td><strong>Optional Args</strong></td>
+            <td>Use <code>= missing</code> for optional inputs; check with <code>ismissing()</code></td>
+          </tr>
+          <tr>
+            <td><strong>File Browser</strong></td>
+            <td>Use <code>uigetfile</code>/<code>uiputfile</code> when file path is missing</td>
+          </tr>
+          <tr>
+            <td><strong>Output</strong></td>
+            <td>Return a <code>struct</code> with named result fields</td>
+          </tr>
+          <tr>
+            <td><strong>Errors</strong></td>
+            <td>Throw errors with app-specific identifiers (e.g., <code>'MyApp:FileNotFound'</code>)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Testing Controllers</h3>
+
+      <p>Controllers can be tested in standalone mode (without a connected UI):</p>
+
+      <div class="callout callout-example">
+        <pre><code class="language-matlab">% Create controller without UI
+ctrl = myapp.Controller();
+
+% Call public API
+model = ctrl.loadFromFile('/path/to/file.mat');
+
+% Verify root object
+assert(isa(ctrl.RootObject, 'MyModel'));
+
+% Check events that would have been sent to UI
+log = ctrl.EventLog;
+assert(strcmp(log{end}.EventName, 'RootObjectChanged'));</code></pre>
+      </div>
+
+      <h2>Related Pages</h2>
+      <ul>
+        <li><a href="projection-schema.html">Projection Schema</a> - Defining projection maps</li>
+        <li><a href="projection-engine.html">Projection Engine</a> - Model-to-JSON conversion</li>
+        <li><a href="model-path.html">Model Path</a> - Object path resolution</li>
+        <li><a href="event-system.html">Event System</a> - UI event handling</li>
+      </ul>
+    </main>
+  </div>
+</body>
+
+</html>

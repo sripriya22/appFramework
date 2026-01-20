@@ -21,5 +21,15 @@ classdef ChildObject < handle
             obj.Value = value;
             obj.Units = units;
         end
+        
+        function results = handleSetUnits(obj, inputs)
+            % Test handler for dispatch testing
+            arguments
+                obj
+                inputs.NewUnits (1,1) string
+            end
+            obj.Units = inputs.NewUnits;
+            results = struct('Units', obj.Units);
+        end
     end
 end

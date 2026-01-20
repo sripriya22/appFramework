@@ -26,6 +26,10 @@ classdef AbstractControllerTest < matlab.unittest.TestCase
             testCase.Controller.testSetRootObject(obj);
             
             testCase.verifyTrue(testCase.Controller.testHasRootObject());
+            
+            % Verify RootObjectChanged event was sent
+            log = testCase.Controller.testGetEventLog();
+            testCase.verifyEqual(log{end}.EventName, "RootObjectChanged");
         end
         
         function testSetRootObjectInvalidClass(testCase)
@@ -125,16 +129,6 @@ classdef AbstractControllerTest < matlab.unittest.TestCase
                 'appFramework:controller:NoRootObject');
         end
         
-        function testInvokeMethodNotFound(testCase)
-            % Test error when method not found
-            obj = testClasses.SimpleObject("Test", 42, true, 1);
-            testCase.Controller.testSetRootObject(obj);
-            
-            testCase.verifyError(...
-                @() testCase.Controller.testInvoke("", "nonExistentMethod", {}), ...
-                'appFramework:controller:MethodNotFound');
-        end
-        
         function testToJSON(testCase)
             % Test converting root object to JSON
             obj = testClasses.SimpleObject("Test", 42, true, 123);
@@ -162,6 +156,7 @@ classdef AbstractControllerTest < matlab.unittest.TestCase
         
         function testNotifyUILogsEvents(testCase)
             % Test that notifyUI logs events in standalone mode
+            testCase.Controller.testClearEventLog();
             testCase.Controller.testNotifyUI("TestEvent", struct('value', 42));
             testCase.Controller.testNotifyUI("AnotherEvent", struct('name', "test"));
             
@@ -187,23 +182,54 @@ classdef AbstractControllerTest < matlab.unittest.TestCase
             % Test that simulateEvent dispatches to handler methods
             obj = testClasses.SimpleObject("Original", 10, true, 1);
             testCase.Controller.testSetRootObject(obj);
+            testCase.Controller.testClearEventLog();
             
-            testCase.Controller.simulateEvent('UpdateName', struct('value', 'NewName'));
+            testCase.Controller.simulateEvent('UpdateName', struct('Value', 'NewName'));
             
             testCase.verifyEqual(obj.Name, "NewName");
+            
+            % Verify response event was sent
+            log = testCase.Controller.testGetEventLog();
+            testCase.verifyEqual(log{end}.EventName, "DispatchResponse");
+            testCase.verifyEqual(log{end}.Data.Results.Name, "NewName");
         end
         
         function testSimulateEventGetModel(testCase)
             % Test the GetModel event handler
             obj = testClasses.SimpleObject("Test", 42, true, 123);
             testCase.Controller.testSetRootObject(obj);
+            testCase.Controller.testClearEventLog();
             
             testCase.Controller.simulateEvent('GetModel', struct());
             
             log = testCase.Controller.testGetEventLog();
-            testCase.verifyEqual(numel(log), 1);
-            testCase.verifyEqual(log{1}.EventName, "ModelLoaded");
-            testCase.verifyEqual(log{1}.Data.Name, "Test");
+            testCase.verifyEqual(log{end}.EventName, "DispatchResponse");
+            testCase.verifyEqual(log{end}.Data.Results.Model.Name, "Test");
+        end
+        
+        function testDispatchUnknownMethod(testCase)
+            % Test error when handler method not found
+            testCase.verifyError(...
+                @() testCase.Controller.simulateEvent('NonExistentMethod', struct()), ...
+                'appFramework:controller:MethodNotFound');
+        end
+        
+        function testDispatchToModelObject(testCase)
+            % Test dispatch with ObjectPath targeting model object
+            parent = testClasses.ParentObject(1, "Parent");
+            child = testClasses.ChildObject(101, "Child1", 10, "mg");
+            parent.addChild(child);
+            testCase.Controller.testSetRootObject(parent);
+            testCase.Controller.testClearEventLog();
+            
+            % Dispatch to handleSetUnits on the child object
+            event = struct('EventType', 'SetUnits', 'ObjectPath', 'Children[1]', ...
+                'Args', struct('NewUnits', 'g'));
+            testCase.Controller.testDispatch(event);
+            
+            log = testCase.Controller.testGetEventLog();
+            testCase.verifyEqual(log{end}.EventName, "DispatchResponse");
+            testCase.verifyEqual(child.Units, "g");
         end
     end
 end
