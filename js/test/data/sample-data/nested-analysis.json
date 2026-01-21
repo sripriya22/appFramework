@@ -1,0 +1,12 @@
+{
+  "StartTime": 0,
+  "StopTime": 100,
+  "ModelObj": {
+    "Name": "TwoCompPK",
+    "Species": [
+      { "SessionID": 1, "Name": "Drug_Central", "Value": 0, "Units": "mg" },
+      { "SessionID": 2, "Name": "Drug_Peripheral", "Value": 0, "Units": "mg" }
+    ]
+  },
+  "SelectedSpecies": [1, 2]
+}

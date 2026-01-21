@@ -1,0 +1,22 @@
+{
+  "MATLABClass": "Test.Species",
+  "JSClass": "Species",
+  "ReferenceIDProperty": "SessionID",
+  "Properties": {
+    "SessionID": {
+      "Type": "double",
+      "ReadOnly": true
+    },
+    "Name": {
+      "Type": "string",
+      "ReadOnly": true
+    },
+    "Value": {
+      "Type": "double"
+    },
+    "Units": {
+      "Type": "string",
+      "ReadOnly": true
+    }
+  }
+}

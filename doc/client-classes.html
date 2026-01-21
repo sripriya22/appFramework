@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client Class Generation - App Framework Spec</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <h1>App Framework Spec</h1>
+      <nav>
+        <ul>
+          <li class="section-header">Overview</li>
+          <li><a href="index.html"><span class="status-dot ready"></span>Introduction</a></li>
+          <li><a href="architecture.html"><span class="status-dot ready"></span>Architecture Overview</a></li>
+          <li><a href="roadmap.html"><span class="status-dot unreviewed"></span>Implementation Roadmap</a></li>
+
+          <li class="section-header">Model</li>
+          <li><a href="projection-schema.html"><span class="status-dot ready"></span>Projection Schema</a></li>
+          <li><a href="projection-engine.html"><span class="status-dot ready"></span>Projection Engine</a></li>
+          <li><a href="model-path.html"><span class="status-dot ready"></span>Model Path</a></li>
+          <li><a href="client-classes.html"><span class="status-dot ready"></span>Client Class Generation</a></li>
+
+          <li class="section-header">Server Integration</li>
+          <li><a href="abstract-controller.html"><span class="status-dot ready"></span>AbstractController</a></li>
+          <li><a href="server-sync.html"><span class="status-dot unreviewed"></span>Server Sync Layer</a></li>
+          <li><a href="service-layer.html"><span class="status-dot unreviewed"></span>Service Layer</a></li>
+
+          <li class="section-header">Core Framework</li>
+          <li><a href="event-system.html"><span class="status-dot unreviewed"></span>Event System</a></li>
+          <li><a href="client-model.html"><span class="status-dot unreviewed"></span>Client Model</a></li>
+          <li><a href="binding.html"><span class="status-dot unreviewed"></span>Data Binding</a></li>
+          <li><a href="view-layer.html"><span class="status-dot unreviewed"></span>View Layer</a></li>
+
+          <li class="section-header">Design Decisions</li>
+          <li><a href="open-issues.html"><span class="status-dot unreviewed"></span>Open Issues</a></li>
+          <li><a href="coding-guidelines.html"><span class="status-dot unreviewed"></span>Coding Guidelines</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Client Class Generation</h1>
+        <nav class="page-nav">
+          <a href="#use-cases" class="page-nav-item">Use Cases</a>
+          <a href="#requirements" class="page-nav-item">Requirements</a>
+          <a href="#design" class="page-nav-item">Architectural Design</a>
+        </nav>
+      </div>
+
+      <p>The <strong>Client Model Classes</strong> are dynamically created at runtime from projection map
+        files to represent MATLAB model objects on the client. These are <strong>pure data containers</strong>
+        with no business logic—behavior is implemented in separate service/manager classes.</p>
+
+      <h2 id="use-cases">Use Cases</h2>
+
+      <h3>Use Case 1: Nested Object Instantiation</h3>
+      <p>When the server sends nested objects (e.g., Analysis contains Model contains Species), the client must
+        recursively instantiate the correct types with their metadata.</p>
+
+      <div class="callout callout-info">
+        <h4>Characteristics</h4>
+        <ul>
+          <li>Nested objects are instantiated with correct metadata</li>
+          <li>Arrays of objects are handled correctly</li>
+          <li>Reference properties remain as reference IDs (not full objects)</li>
+          <li>Circular references are avoided</li>
+        </ul>
+      </div>
+
+      <div class="callout callout-example">
+        <h4>Example</h4>
+        <pre><code class="language-javascript">const analysis = factory.create('PKPD.Analysis', serverData);
+// analysis.ModelObj is created with SimBiology.Model metadata
+// analysis.ModelObj.Species is an array with Species metadata
+// analysis.SelectedSpecies is an array of reference IDs (numbers)</code></pre>
+      </div>
+
+      <h3>Use Case 2: Metadata-Driven View Generation</h3>
+      <p>The view layer needs runtime access to property metadata to automatically determine appropriate widget types.</p>
+
+      <div class="callout callout-info">
+        <h4>Characteristics</h4>
+        <ul>
+          <li>View queries property type, readonly status, etc. from projection maps</li>
+          <li>Automatically renders appropriate widgets (number input, text input, dropdown, etc.)</li>
+          <li>No manual view code needed for each property</li>
+          <li>Changes to model structure automatically reflected in UI</li>
+        </ul>
+      </div>
+
+      <div class="callout callout-example">
+        <h4>Example</h4>
+        <pre><code class="language-javascript">// View queries metadata to determine widget
+const meta = analysis.getPropertyMetadata('StartTime');
+// { Type: 'double', ReadOnly: false }
+
+if (meta.Type === 'double' && !meta.ReadOnly) {
+  // Render: &lt;input type="number"&gt;
+} else if (meta.ReadOnly) {
+  // Render: &lt;span&gt; (read-only display)
+}</code></pre>
+      </div>
+
+      <h3>Use Case 3: Separation of Data and Behavior</h3>
+      <p>Model instances contain only data. Business logic lives in separate service/manager classes.</p>
+
+      <div class="callout callout-info">
+        <h4>Characteristics</h4>
+        <ul>
+          <li>Model instances have no methods (except metadata accessors)</li>
+          <li>Services operate on model instances</li>
+          <li>Clear separation of concerns</li>
+          <li>Easier to test and maintain</li>
+        </ul>
+      </div>
+
+      <div class="callout callout-example">
+        <h4>Example</h4>
+        <pre><code class="language-javascript">// Data container (created dynamically)
+const analysis = factory.create('PKPD.Analysis', data);
+// analysis.StartTime, analysis.StopTime are plain properties
+
+// Behavior in separate class
+class AnalysisService {
+  validate(analysis) { ... }
+  computeDuration(analysis) { return analysis.StopTime - analysis.StartTime; }
+}</code></pre>
+      </div>
+
+      <h2 id="requirements">Requirements</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Requirement</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>R-MetadataAccess</td>
+            <td>Must provide runtime access to property metadata (type, readonly, etc.) for view generation</td>
+          </tr>
+          <tr>
+            <td>R-NestedInstantiation</td>
+            <td>Must recursively instantiate nested objects with correct metadata</td>
+          </tr>
+          <tr>
+            <td>R-ReferenceHandling</td>
+            <td>Must preserve reference properties as IDs (not instantiate full objects)</td>
+          </tr>
+          <tr>
+            <td>R-DataOnly</td>
+            <td>Model instances must contain only data properties (no business logic methods)</td>
+          </tr>
+          <tr>
+            <td>R-AutoSync</td>
+            <td>Must automatically stay in sync with projection map files (no build step)</td>
+          </tr>
+          <tr>
+            <td>R-Performance</td>
+            <td>Instantiation must not introduce perceptible UI lag (&lt;100ms for typical models)</td>
+          </tr>
+          <tr>
+            <td>R-Simplicity</td>
+            <td>Implementation must be simple and maintainable (~200 lines of code)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="design">Architectural Design</h2>
+
+      <h3>Recommendation: Dynamic Classes</h3>
+
+      <p>This framework uses <strong>dynamic classes</strong> that are created at runtime from projection maps.</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Context Factor</th>
+            <th>Impact on Decision</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Metadata-Driven Views</strong></td>
+            <td>View layer needs runtime access to property metadata (type, readonly, etc.) to determine widget types—this is the primary driver</td>
+          </tr>
+          <tr>
+            <td><strong>Auto-Sync</strong></td>
+            <td>Dynamic classes automatically stay in sync with projection maps—no build step, no sync risk</td>
+          </tr>
+          <tr>
+            <td><strong>Cached Representations</strong></td>
+            <td>Objects are short-lived snapshots from MATLAB, not source of truth—simplicity matters more than type safety</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>Alternative: Code Generation</h4>
+      <p>Code generation (build-time class file generation) was considered but not selected for this framework.</p>
+      
+      <p><strong>Pros:</strong> Static class files, explicit structure visible in codebase</p>
+      <p><strong>Cons:</strong> Requires build step, sync risk between generated files and projection maps, additional tooling complexity
+
+      <h3>Dynamic Class Implementation</h3>
+
+      <p>The ModelManager creates instances dynamically from projection maps:</p>
+
+      <div class="callout callout-example">
+        <h4>ModelManager (Simplified)</h4>
+        <pre><code class="language-javascript">class ModelManager {
+  constructor(projectionMaps) {
+    this.maps = projectionMaps;
+  }
+  
+  create(className, data) {
+    const map = this.maps[className];
+    if (!map) {
+      throw new Error(`No projection map for class: ${className}`);
+    }
+    
+    const instance = {};
+    
+    // Instantiate each property
+    for (const [propName, propDef] of Object.entries(map.Properties)) {
+      const value = data[propName];
+      instance[propName] = this.instantiateProperty(value, propDef);
+    }
+    
+    // Attach metadata accessors (non-enumerable)
+    Object.defineProperties(instance, {
+      getPropertyMetadata: { value: (propName) => map.Properties[propName], enumerable: false },
+      getClassName: { value: () => map.JSClass, enumerable: false }
+    });
+    
+    return instance;
+  }
+  
+  // Class metadata lookup (no instance needed)
+  getClassMetadata(className) {
+    return this.maps[className];
+  }
+  
+  getPropertyMetadata(className, propName) {
+    return this.maps[className]?.Properties?.[propName];
+  }
+}</code></pre>
+      </div>
+
+      <div class="callout callout-example">
+        <h4>Usage</h4>
+        <pre><code class="language-javascript">// Load projection maps at app startup
+const manager = new ModelManager(projectionMaps);
+
+// Create model instances from server data
+const analysis = manager.create('PKPD.Analysis', serverData);
+
+// Access properties normally
+console.log(analysis.StartTime);  // 0
+
+// View layer queries metadata (from manager, not instance)
+const meta = manager.getPropertyMetadata('PKPD.Analysis', 'StartTime');
+// { Type: 'double', ReadOnly: false }
+
+// Determine widget type based on metadata
+if (meta.Type === 'double' && !meta.ReadOnly) {
+  // Render: &lt;input type="number"&gt;
+} else if (meta.ReadOnly) {
+  // Render: &lt;span&gt; (read-only display)
+}</code></pre>
+      </div>
+
+      <h3>File Structure</h3>
+
+      <div class="callout callout-example">
+        <pre><code>appFramework/
+└── js/
+    └── src/
+        └── model/
+            └── ModelManager.js        # Dynamic instance creation & metadata
+
+myApp/                                  # App-specific folder
+└── shared/
+    └── model-projection/              # App-specific projection maps
+        ├── analysis.json
+        ├── model.json
+        └── species.json</code></pre>
+      </div>
+
+      <p><strong>Note:</strong> Projection map files are app-specific (not in appFramework) since each app
+        defines its own model structure. The framework provides the ModelManager; apps provide the maps.</p>
+
+      <h3>Complexity Analysis</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th>Lines of Code</th>
+            <th>Complexity</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ModelManager.js</td>
+            <td>~150-200</td>
+            <td>Low - straightforward logic</td>
+          </tr>
+          <tr>
+            <td>Projection maps</td>
+            <td>Already exist</td>
+            <td>N/A - reuse existing MATLAB projection maps</td>
+          </tr>
+          <tr>
+            <td>Build tooling</td>
+            <td>0</td>
+            <td>None - no build step required</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Performance Analysis</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Operation</th>
+            <th>Time Complexity</th>
+            <th>Expected Performance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Instance creation</td>
+            <td>O(n) where n = number of properties</td>
+            <td>&lt;1ms for typical objects (10-50 properties)</td>
+          </tr>
+          <tr>
+            <td>Nested instantiation</td>
+            <td>O(n × m) where m = nesting depth</td>
+            <td>&lt;5ms for shallow hierarchies (Analysis → Model → Species[])</td>
+          </tr>
+          <tr>
+            <td>Metadata lookup</td>
+            <td>O(1) - direct property access</td>
+            <td>Negligible</td>
+          </tr>
+          <tr>
+            <td>Projection map loading</td>
+            <td>O(k) where k = number of maps</td>
+            <td>One-time cost at app startup (~10-50ms)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>Large Model Estimates (Complex SimBiology Model)</h4>
+      <p>For a model with ~5,000 components (Species, Parameters, Reactions, etc.), each with ~12 properties:</p>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Calculation</th>
+            <th>Estimate</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Total property assignments</td>
+            <td>5,000 objects × 12 properties</td>
+            <td>~60,000 assignments</td>
+          </tr>
+          <tr>
+            <td>Object allocations</td>
+            <td>5,000 model objects + metadata accessors</td>
+            <td>~5,000 objects</td>
+          </tr>
+          <tr>
+            <td>Full model instantiation</td>
+            <td>~0.01ms per object (property loop + defineProperties)</td>
+            <td>~50-100ms</td>
+          </tr>
+          <tr>
+            <td>Memory footprint</td>
+            <td>~500 bytes per object (properties + closures)</td>
+            <td>~2.5 MB</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p><strong>Optimization notes:</strong></p>
+      <ul>
+        <li>Instantiation is dominated by property iteration and object creation—both are highly optimized in V8</li>
+        <li>Metadata accessors use closures over the projection map (shared, not copied per instance)</li>
+        <li>If 100ms is too slow, consider lazy instantiation of deeply nested arrays</li>
+        <li>Memory is modest—JavaScript objects are lightweight compared to class instances</li>
+      </ul>
+
+      <p><strong>Total implementation effort:</strong> ~200 lines of straightforward JavaScript, no build infrastructure.</p>
+
+      <h2>Related Pages</h2>
+      <ul>
+        <li><a href="projection-schema.html">Projection Schema</a> - Defines the input format for generation</li>
+        <li><a href="client-model.html">Client Model</a> - How generated classes are used in the app</li>
+        <li><a href="server-sync.html">Server Sync Layer</a> - How data flows from MATLAB to client classes</li>
+      </ul>
+    </main>
+  </div>
+</body>
+
+</html>

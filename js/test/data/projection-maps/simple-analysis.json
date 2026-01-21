@@ -1,0 +1,16 @@
+{
+  "MATLABClass": "Test.Analysis",
+  "JSClass": "Analysis",
+  "Properties": {
+    "StartTime": {
+      "Type": "double"
+    },
+    "StopTime": {
+      "Type": "double"
+    },
+    "Name": {
+      "Type": "string",
+      "ReadOnly": true
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "MATLABClass": "Test.Model",
+  "JSClass": "Model",
+  "Properties": {
+    "Name": {
+      "Type": "string",
+      "ReadOnly": true
+    },
+    "Species": {
+      "Type": "Test.Species",
+      "IsArray": true,
+      "IsReference": false
+    }
+  }
+}
